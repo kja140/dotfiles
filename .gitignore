@@ -1,0 +1,6 @@
+doom/secrets.el
+doom/custom.el
+doom/bookmarks.el
+*~
+*.elc
+doom/bookmarks
