@@ -4,3 +4,5 @@ doom/bookmarks.el
 *~
 *.elc
 doom/bookmarks
+doom/lisp/journal.el
+doom/lisp/journal.el
