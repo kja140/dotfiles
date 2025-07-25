@@ -1,5 +1,6 @@
 (setq doom-theme 'doom-gruvbox)
 (setq doom-gruvbox-dark-variant "soft")
+(setq debug-on-error t)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -20,6 +21,8 @@
        :desc "Delete bookmark"                         "M" #'bookmark-set
        :desc "Save current bookmarks to bookmark file" "w" #'bookmark-save))
 
+(add-to-list 'load-path "~/.doom.d/lisp")
+(load! "lisp/journal")
 
 ;; Buffers
 ;; Keeps buffers getting out of sync if that file has been changed by another program
@@ -340,71 +343,6 @@
       org-journal-find-file 'find-file
 
       org-journal-carryover-items nil) ;; don't carry over unfinished todos
-(defun my/cbt-journal-template ()
-  (goto-char (point-max))
-  (insert "
-* 🧠 CBT Journal Template
-Use this daily or when your mood noticeably shifts. Each question is a separate area to reflect clearly. Keep responses raw, honest, and non-judgemental.
-
-** 🧩 What happened?
-What happened externally today? Keep this factual and judgment-free. Think of it like a camera recording what you did or what occurred — not what you felt or thought.
-Group into categories like:
-- Events you did
-- Things you skipped or avoided
-- Social interactions
-
--
-
-** 🧠 What were my automatic thoughts?
-Write down the raw, unfiltered thoughts that went through your mind. These are often critical, irrational, or emotionally charged. Avoid saying “I think…” — just write the thought the way it felt in your head.
-
--
-
-** 💥 What emotions did I feel? (0–100%) [[id:849ac602-9736-406b-85d1-04329db7ab0b][List of Emotions]])
-Label each emotion you felt and give it a percentage intensity (0–100%). You can include what triggered each emotion if helpful. Include both positive and negative emotions if they were present.
-
--
-
-** ⚡ What did I do or feel like doing?
-This section helps map the link between your emotions/thoughts and your actions. Break it down into:
-- Action / Urge: What you did or felt like doing as a reaction
-- Avoidance: What you didn’t do, possibly to avoid discomfort or emotion
-- Coping: What you did to manage how you were feeling (healthy or unhealthy)
-
-- Action / Urge:
-  -
-- Avoidance:
-  -
-- Coping:
-  -
-
-** ❗ What thinking distortions were present?
-Identify distorted thinking patterns [[id:a822de35-7b0d-4f4c-88bc-0b4e6db770db][Common Thought Distortions]]. These include mind reading, catastrophising, black-and-white thinking, emotional reasoning, labelling, should statements, etc. Refer to your linked distortions page.
-
--
-
-** 🔄 What’s a more balanced thought?
-Challenge your automatic thoughts with a rational, compassionate response. The goal is not fake positivity — just accuracy, fairness, and self-kindness.
-
--
-
-** 📉 How do I feel now? (0–100%)
-After journaling and reframing, reflect on how you feel now. Rate the intensity and note any shifts in mood.
-
--
-
-** 🌱 What can I try tomorrow?
-Write down a few simple intentions or experiments to try tomorrow. These can be related to thoughts, behaviours, or emotional awareness. Keep them small and specific.
-
--
-
-** 🌞 What went well today?
-Acknowledge any positive moments or small wins from the day. This helps reinforce healthy patterns and trains your brain to notice positives.
-
--
-"))
-
-(add-hook 'org-journal-after-entry-create-hook #'my/cbt-journal-template)
 
 (add-to-list 'default-frame-alist '(width . 127))   ;; columns (characters)
 (add-to-list 'default-frame-alist '(height . 44));; rows (lines)
