@@ -70,3 +70,9 @@
 (package! gptel :recipe (:nonrecursive t)) ;;Ai responses in emacs
 (package! company-box)
 (package! lsp-ivy)
+;; grab org-fc straight from SourceHut
+(package! org-fc
+  :recipe (:host sourcehut
+           :repo "l3kn/org-fc"
+           :files (:defaults "awk" "demo.org")))
+(package! org-noter)

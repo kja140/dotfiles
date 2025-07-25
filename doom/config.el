@@ -168,6 +168,13 @@
       :desc "Go back link" "h" #'org-mark-ring-goto
       :desc "Backlinks buf" "l" #'org-roam-buffer-toggle)
 
+;; Transparency
+(defun my/set-transparency ()
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 60))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 60))))
+
+(add-hook 'window-setup-hook #'my/set-transparency)
+
 ;; ─────────────────────────────────────────────────────────────────────────────
 ;; Org-Roam + Dailies + Capture Templates
 ;; ─────────────────────────────────────────────────────────────────────────────
@@ -566,10 +573,6 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
 
 (remove-hook 'org-mode-hook #'org-modern-mode)
 
-;; Coding in C
-
-(setq lsp-clients-clangd-executable "/opt/homebrew/opt/llvm/bin/clangd")
-
 (after! org
   (setq org-agenda-custom-commands
         '(("d" "📆 Daily Agenda + Grouped Tasks"
@@ -664,34 +667,71 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
                                   :test "ctest"
                                   :configure "cmake -B build"))
 
-;; LSP Mode for intelligent code completion
-(use-package lsp-mode
-  :hook ((cmake-mode . lsp-deferred))  ; Fixed: cmake-mode (not cmake.mode)
-  :ensure t
-  :hook ((c-mode . lsp-deferred)
-         (c++-mode . lsp-deferred))
-  :commands (lsp lsp-deferred)
-  :init
-  (setq lsp-keymap-prefix "C-c l")
-  :config
-  (setq lsp-idle-delay 0.5
-        lsp-log-io nil
-        lsp-completion-provider :capf
-        ;; Clangd settings for embedded development
-        lsp-clients-clangd-args
-        '("--header-insertion-decorators=0"
-          "--compile-commands-dir=build"
-          "--background-index")))
+;;─────────────────
+;; Helpers to clear the “blocklisted folders” from LSP’s session
+;; ─────────────────────────────────────────────────────────────────────────────
+(defun my/lsp-clear-project-blocklist ()
+  "Remove this project folder from lsp-session’s blocklist."
+  (interactive)
+  (let* ((session (lsp-session))
+         (proj   "/Users/kiera/Developer/uni/Group27/"))
+    (setf (lsp-session-folders-blocklist session)
+          (delete proj
+                  (lsp-session-folders-blocklist session)))
+    (message "Removed %s from LSP blocklist." proj)))
 
-;; LSP UI enhancements
-(use-package lsp-ui
-  :ensure t
-  :hook (lsp-mode . lsp-ui-mode)
+;; Run it on every lsp-mode startup so you never get re-blocked:
+;; ─────────────────────────────────────────────────────────────────────────────
+;; LSP-UI: inline docs, sideline, peek, code actions
+;; ─────────────────────────────────────────────────────────────────────────────
+(use-package! lsp-ui
+  :after lsp-mode
+  :commands lsp-ui-mode
+  :init
+  (map! :leader
+        :desc "LSP UI peek definitions"   "l p" #'lsp-ui-peek-find-definitions
+        :desc "LSP UI peek references"    "l r" #'lsp-ui-peek-find-references
+        :desc "LSP UI code actions"       "l a" #'lsp-ui-sideline-apply-code-actions)
   :config
-  (setq lsp-ui-doc-enable t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-sideline-enable t
-        lsp-ui-sideline-show-diagnostics t))
+  (setq lsp-ui-doc-enable              t
+        lsp-ui-doc-delay               0.3
+        lsp-ui-doc-position            'at-point
+        lsp-ui-doc-use-webkit          nil
+
+        lsp-ui-sideline-enable         t
+        lsp-ui-sideline-delay          0.2
+        lsp-ui-sideline-show-hover     t
+        lsp-ui-sideline-show-code-actions t
+
+        lsp-ui-peek-enable             t
+        lsp-ui-peek-list-width         60
+        lsp-ui-peek-peek-height        25)
+  (add-hook 'lsp-mode-hook #'lsp-ui-mode))
+
+
+;; ─────────────────────────────────────────────────────────────────────────────
+;; Tame LSP’s blocklist & root detection for your “Group27” C project
+;; ─────────────────────────────────────────────────────────────────────────────
+;; ─────────────────────────────────────────────────────────────────────────────
+;; Universal clangd/LSP config for C, C++, Objective-C
+;; ─────────────────────────────────────────────────────────────────────────────
+(after! lsp-mode
+  ;; If you don’t use Projectile/project.el, guess your root by CMakeLists/.git
+  (setq lsp-auto-guess-root t)
+
+  ;; Point at your clangd (or rely on PATH)
+  (setq lsp-clients-clangd-executable "/opt/homebrew/opt/llvm/bin/clangd"
+        lsp-clients-clangd-args
+        '("--background-index"
+          "--compile-commands-dir=build"
+          "--header-insertion-decorators=0"))
+
+  ;; Never “never start a server here”—clear the blocklist
+  (setf (lsp-session-folders-blocklist (lsp-session)) nil)
+
+  ;; Start clangd automatically in every C/C++/ObjC buffer
+  (dolist (hook '(c-mode-hook c++-mode-hook objc-mode-hook))
+    (add-hook hook #'lsp-deferred)))
 
 ;; Company for auto-completion
 (use-package company
@@ -808,13 +848,6 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
-;; Transparency
-(defun my/set-transparency ()
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 60))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 60))))
-
-(add-hook 'window-setup-hook #'my/set-transparency)
-
 (use-package! gptel
   :config
   (setq
@@ -855,15 +888,12 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
 (map! :leader
       :desc "Chat with DeepSeek (gptel)" "c d" #'gptel)
 
-(after! lsp-mode
-  ;; Turn off all file-watcher ignores and disable watcher startup entirely
-  (setq lsp-enable-file-watchers nil
-        lsp-file-watch-ignored-directories '()))
 (setq org-hugo-base-dir "~/Developer/personal/KieranDigitalNotes/")
 (setq org-export-with-broken-links t)
+(setq org-hugo-front-matter-format 'toml)
 
 (defun my/org-hugo-export-non-private-notes ()
-  "Export Org-roam notes (including courses) that are not tagged :private: to Hugo/Quartz, with numeric tag quoting and date patching."
+  "Export Org-roam notes (excluding :private:) to Hugo/Quartz with proper TOML formatting."
   (interactive)
   (let ((note-dirs '("~/org/roam" "~/org/roam/courses")))
     (dolist (dir note-dirs)
@@ -871,13 +901,9 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
         (with-current-buffer (find-file-noselect file)
           (goto-char (point-min))
           (unless (re-search-forward ":private:" nil t)
-            ;; 🔧 Quote numeric filetags
+            ;; 🔧 Quote ALL filetags
             (let* ((tags (org-get-tags))
-                   (safe-tags (mapcar (lambda (tag)
-                                        (if (string-match-p "^[0-9]+$" tag)
-                                            (format "\"%s\"" tag)
-                                          tag))
-                                      tags)))
+                   (safe-tags (mapcar (lambda (tag) (format "\"%s\"" tag)) tags)))
               (save-excursion
                 (goto-char (point-min))
                 (when (re-search-forward "^#\\+filetags:" nil t)
@@ -893,14 +919,14 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
               (unless (re-search-forward "^#\\+hugo_section:" nil t)
                 (forward-line 1)
                 (insert "#+hugo_section: .\n")))
-            ;; 📝 Export
+            ;; ✅ Flush cache and export
+            (org-element-cache-reset)
             (org-hugo-export-to-md)))))))
-`
 
 (defun my/org-add-hugo-section-to-all ()
-  "Add #+hugo_section: . to all Org-roam notes (including courses) that don't already have it."
+  "Ensure all Org-roam notes have #+hugo_section: ."
   (interactive)
-  (let ((note-dirs '("~/org/roam" "~/org/roam/courses"))) ;; add more if needed
+  (let ((note-dirs '("~/org/roam" "~/org/roam/courses")))
     (dolist (dir note-dirs)
       (dolist (file (directory-files-recursively dir "\\.org$"))
         (with-current-buffer (find-file-noselect file)
@@ -911,10 +937,118 @@ Acknowledge any positive moments or small wins from the day. This helps reinforc
             (insert "#+hugo_section: .\n")
             (save-buffer)))))))
 
-
 (map! :leader
       :prefix ("m q" . "Quartz export")
       :desc "Export all non-private notes to Quartz"
       "p" #'my/org-hugo-export-non-private-notes
       :desc "Add hugo_section to all notes"
       "s" #'my/org-add-hugo-section-to-all)
+(defun my/org-hugo-dry-check-toml-tags ()
+  "Dry-run checker: scan all Org-roam notes for filetags that would break TOML frontmatter in Quartz."
+  (interactive)
+  (let ((note-dirs '("~/org/roam" "~/org/roam/courses"))
+        (bad-files '())
+        ;; Characters that require quoting in TOML strings
+        (toml-unsafe-regexp "[[:space:]=#,\\[\\]\\\\\"]"))
+    (dolist (dir note-dirs)
+      (dolist (file (directory-files-recursively dir "\\.org$"))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (goto-char (point-min))
+          (when (re-search-forward "^#\\+filetags: *:\\(.*\\):" nil t)
+            (let* ((tagstr (match-string 1))
+                   (tags (split-string tagstr ":" t))
+                   (bad-tags
+                    (seq-filter
+                     (lambda (tag)
+                       (or
+                        ;; tag needs quoting but isn't quoted
+                        (string-match-p toml-unsafe-regexp tag)
+                        ;; numeric and unquoted (TOML prefers quoted)
+                        (string-match-p "^[0-9]+$" tag)))
+                     tags)))
+              (when bad-tags
+                (push (cons file bad-tags) bad-files)))))))
+    (if bad-files
+        (progn
+          (message "🚨 Found unsafe tags in %d files:" (length bad-files))
+          (dolist (entry bad-files)
+            (message "📝 %s → unsafe tags: %s" (car entry) (string-join (cdr entry) ", "))))
+      (message "✅ All filetags are TOML-safe!"))))
+
+(defun my/org-fix-all-unsafe-tags ()
+  "Quote all unsafe tags in `#+filetags:` and `#+ROAM_TAGS:` across Org-roam files.
+Purely numeric tags and tags with TOML-unsafe characters get wrapped in double-quotes.
+Already-quoted tags are left as-is."
+  (interactive)
+  (let* ((dirs '("~/org/roam" "~/org/roam/courses"))
+         ;; Characters that require quoting in TOML strings
+         (unsafe-regexp "[[:space:]=,\\[\\]\\\\\"]"))
+    (dolist (dir dirs)
+      (dolist (file (directory-files-recursively dir "\\.org$"))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (goto-char (point-min))
+          (while (re-search-forward
+                  "^\\s-*#\\+\\(filetags\\|ROAM_TAGS\\):\\s-*\\(.*\\)$"
+                  nil t)
+            (let* ((key      (match-string 1))
+                   (raw-body (match-string 2))
+                   ;; Strip leading/trailing colons
+                   (body     (string-remove-prefix ":"
+                                  (string-remove-suffix ":" raw-body)))
+                   ;; Split into tags, omit empty
+                   (tags     (delete-dups (split-string body ":" t)))
+                   (safe-tags
+                    (mapcar (lambda (tag)
+                              (let ((tag-trimmed (string-trim tag)))
+                                (cond
+                                 ;; Already quoted
+                                 ((string-match-p "^[\"'].*[\"']$" tag-trimmed)
+                                  tag-trimmed)
+                                 ;; Numeric-only or contains unsafe char
+                                 ((or (string-match-p "^[0-9]+$" tag-trimmed)
+                                      (string-match-p unsafe-regexp tag-trimmed))
+                                  (format "\"%s\""
+                                          (string-trim tag-trimmed "'\"")))
+                                 (t tag-trimmed))))
+                            tags))
+                   (newline  (concat "#+" key ": :"
+                                     (string-join safe-tags ":") ":")))
+              ;; Replace the entire line
+              (beginning-of-line)
+              (kill-line)
+              (insert newline)))
+          (write-region (point-min) (point-max) file))))))
+;; ensure hydra is available
+(use-package! hydra)
+
+;; configure org-fc
+(use-package! org-fc
+  :after org
+  :custom
+  (org-fc-directories '("~/org/roam"))  ;; point at your roam vault
+  :config
+  (require 'org-fc-hydra))               ;; nifty hydra menu
+
+;; keybindings under SPC f …
+(map! :leader
+      :prefix ("f" . "flashcards")
+      :desc "Review all flashcards"      "r" #'org-fc-review
+      :desc "Flashcard hydra menu"       "h" #'org-fc-hydra/body)
+
+;; capture template for new cloze cards
+(after! org
+  (add-to-list 'org-capture-templates
+    '("f" "Flashcard" entry
+      (file+headline "~/org/roam/inbox.org" "New Cards")
+      "* %?\n:PROPERTIES:\n:FC_TYPE: cloze\n:END:\n")))
+
+(use-package! org-noter
+  :after (:any org pdf-view)
+  :config
+  (setq org-noter-notes-search-path '("~/org/roam/")
+        org-noter-always-create-frame nil
+        org-noter-hide-other nil
+        org-noter-default-notes-file-names '("notes.org")
+        org-noter-separate-notes-from-heading t))
