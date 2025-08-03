@@ -219,7 +219,16 @@
       :if-new (file+head "%<%Y-%m-%d>.org"
                          "#+title: %<%Y-%m-%d>\n#+roam_alias: ${alias}\n#+filetags: :daily:\n")))
 
-  ))
+   org-roam-capture-templates
+   '(("c" "Course Note"    plain "%?"
+      :target (file+head "courses/${slug}.org"
+                         "#+title: ${title}\n#+roam_alias: ${alias}\n#+hugo_section: .\n#+filetags: :course:\n")
+      :unnarrowed t)
+
+     ("r" "Blank Note"     plain "%?"
+      :target (file+head "${slug}.org"
+                         "#+title: ${title}\n#+roam_alias: ${alias}\n#+hugo_section: .\n#+filetags:\n")
+      :unnarrowed t))))
 
 
 ;; ─────────────────────────────────────────────────────────────────────────────
@@ -271,101 +280,90 @@
 )
 
 
-;; ─────────────────────────────────────────────────────────────────────────────
-;; Org-roam: Template-first capture
-;; ─────────────────────────────────────────────────────────────────────────────
 
-;; ─────────────────────────────────────────────────────────────────────────────
-;; Org-roam: Template-first capture
-;; ─────────────────────────────────────────────────────────────────────────────
-(after! org-roam
-  (setq org-roam-capture-templates
-        '(("f" "Feynman Technique" plain
-           "** ${title}
-:PROPERTIES:
-:ID: %(org-id-new)
-:END:
-
-** 1️⃣ Understand It (Initial Explanation)
-Write your understanding from memory, as if teaching it to someone.
-
-** 2️⃣ Simplify It
-Explain the idea in the simplest possible terms.
-- Imagine explaining it to someone outside your field.
-
-** 3️⃣ Identify Gaps
-Ask yourself:
-- What parts feel vague or hand-wavy?
-- Where did I use words I don’t fully understand?
-- Did I assume something without justification?
-- Are there edge cases, exceptions, or mechanisms I skipped?
-- Could I apply this to a concrete example?
-Write questions that arise here:
-
-- [ ] Q1:
-- [ ] Q2:
-- [ ] Q3:
-- [ ] Q4:
-- [ ] Q5:
-
-** 4️⃣ Fill the Gaps
-Use external resources (books, papers, videos, PDFs) to answer the questions above.
-Capture sources + answers below each question.
-
-- [ ] Q1:
-- [ ] Q2:
-- [ ] Q3:
-- [ ] Q4:
-- [ ] Q5:
-
-** 5️⃣ Refine and Connect
-- [ ] Add analogy or drawing
-- [ ] Link to related nodes
-- [ ] Create atomic flashcards*** 1️⃣ Understand It (Initial Explanation)"
-
-         :target (file+head "feynman_technique/${slug}.org"
-                            "#+title: ${title}\n#+filetags: :feynman:ultralearning:\n#+created: %U\n")
-         :unnarrowed t
-         :empty-lines 1)
-
-        ("c" "Course Note" plain "%?"
-         :target (file+head "courses/${slug}.org"
-                            "#+title: ${title}\n#+roam_alias: ${alias}\n#+hugo_section: .\n#+filetags: :course:\n")
-         :unnarrowed t)
-
-        ("r" "Blank Note" plain "%?"
-         :target (file+head "${slug}.org"
-                            "#+title: ${title}\n#+roam_alias: ${alias}\n#+hugo_section: .\n#+filetags:\n")
-         :unnarrowed t)))
-
-  (defun my/org-roam-capture-template-first ()
-    "Bypass the node list: pick an Org-roam template
-    by key and description, then create a new node."
-    (interactive)
-    (let* ((templates org-roam-capture-templates)
-           ;; Build choices like "f) Feynman Technique"
-           (choices (mapcar (lambda (tpl)
-                              (format "%s) %s" (car tpl) (nth 1 tpl)))
-                            templates))
-           ;; Prompt on those choices
-           (selection (completing-read "Roam template: " choices nil t))
-           ;; Extract the key (the char before the ')')
-           (key (substring selection 0 (string-match-p ")" selection)))
-           ;; Find the full template by that key
-           (template (cl-find key templates :key #'car :test #'string=)))
-      ;; Now call org-roam-capture with only that one template
-      (org-roam-capture
-       nil               ; no prefix arg
-       key               ; template key
-       :filter-fn (lambda (_node) nil)
-       :templates (list template)))))
-
-;; Optional keybinding (SPC n i C)
+(defun my/org-roam-capture-template-first ()
+  "Bypass the node list: pick an Org-roam template by key and description, then create a new node."
+  (interactive)
+  (let* ((templates org-roam-capture-templates)
+         ;; Build choices like "c) Course Note"
+         (choices (mapcar (lambda (tpl)
+                            (format "%s) %s" (car tpl) (nth 1 tpl)))
+                          templates))
+         ;; Prompt on those choices
+         (selection (completing-read "Roam template: " choices nil t))
+         ;; Extract the key (the char before the ')')
+         (key (substring selection 0 (string-match-p ")" selection)))
+         ;; Find the full template by that key
+         (template (cl-find key templates :key #'car :test #'string=)))
+    ;; Now call org-roam-capture with only that one template
+    (org-roam-capture
+     nil               ; no prefix arg
+     key               ; template key
+     :filter-fn (lambda (_node) nil)
+     :templates (list template))))
+;; Bind it wherever you like—here we make SPC n r C jump straight into it:
 (map! :leader
       :prefix ("n i" . "org-roam")
       :desc  "Template-first roam capture"
       "C"    #'my/org-roam-capture-template-first)
-
+(defun my/org-roam-capture-template-first ()
+  "Bypass the node list: pick an Org-roam template by key and description, then create a new node."
+  (interactive)
+  (let* ((templates org-roam-capture-templates)
+         ;; Build choices like "c) Course Note"
+         (choices (mapcar (lambda (tpl)
+                            (format "%s) %s" (car tpl) (nth 1 tpl)))
+                          templates))
+         ;; Prompt on those choices
+         (selection (completing-read "Roam template: " choices nil t))
+         ;; Extract the key (the char before the ')')
+         (key (substring selection 0 (string-match-p ")" selection)))
+         ;; Find the full template by that key
+         (template (cl-find key templates :key #'car :test #'string=)))
+    ;; Now call org-roam-capture with only that one template
+    (org-roam-capture
+     nil               ; no prefix arg
+     key               ; template key
+     :filter-fn (lambda (_node) nil)
+     :templates (list template))))(defun my/org-roam-capture-template-first ()
+  "Bypass the node list: pick an Org-roam template by key and description, then create a new node."
+  (interactive)
+  (let* ((templates org-roam-capture-templates)
+         ;; Build choices like "c) Course Note"
+         (choices (mapcar (lambda (tpl)
+                            (format "%s) %s" (car tpl) (nth 1 tpl)))
+                          templates))
+         ;; Prompt on those choices
+         (selection (completing-read "Roam template: " choices nil t))
+         ;; Extract the key (the char before the ')')
+         (key (substring selection 0 (string-match-p ")" selection)))
+         ;; Find the full template by that key
+         (template (cl-find key templates :key #'car :test #'string=)))
+    ;; Now call org-roam-capture with only that one template
+    (org-roam-capture
+     nil               ; no prefix arg
+     key               ; template key
+     :filter-fn (lambda (_node) nil)
+     :templates (list template))))(defun my/org-roam-capture-template-first ()
+  "Bypass the node list: pick an Org-roam template by key and description, then create a new node."
+  (interactive)
+  (let* ((templates org-roam-capture-templates)
+         ;; Build choices like "c) Course Note"
+         (choices (mapcar (lambda (tpl)
+                            (format "%s) %s" (car tpl) (nth 1 tpl)))
+                          templates))
+         ;; Prompt on those choices
+         (selection (completing-read "Roam template: " choices nil t))
+         ;; Extract the key (the char before the ')')
+         (key (substring selection 0 (string-match-p ")" selection)))
+         ;; Find the full template by that key
+         (template (cl-find key templates :key #'car :test #'string=)))
+    ;; Now call org-roam-capture with only that one template
+    (org-roam-capture
+     nil               ; no prefix arg
+     key               ; template key
+     :filter-fn (lambda (_node) nil)
+     :templates (list template))))
 (use-package! org-superstar
   :after org
   :hook (org-mode . org-superstar-mode)
@@ -574,7 +572,7 @@ Capture sources + answers below each question.
 
   ;; Drag-and-drop support (optional)
   (setq org-download-method 'directory
-        org-download-image-org-width 400                             ;; scale image previews
+        org-download-image-org-width 600                             ;; scale image previews
         org-download-screenshot-method "screencapture -i %s")       ;; macOS screenshot tool
 )
 

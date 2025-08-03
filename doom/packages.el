@@ -58,10 +58,9 @@
 (package! org-download)
 (package! org-super-agenda)
 ;(package! org-notify)
-
+(package! org-modern)
 (package! cmake-mode)
 (package! projectile)
-(package! lsp-mode)
 (package! lsp-ui)
 (package! company)
 (package! flycheck)
@@ -76,3 +75,4 @@
            :repo "l3kn/org-fc"
            :files (:defaults "awk" "demo.org")))
 (package! org-noter)
+(package! org-web-tools)
