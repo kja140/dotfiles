@@ -1,0 +1,6 @@
+
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Created by `pipx` on 2025-07-13 20:57:23
+export PATH="$PATH:/Users/kiera/.local/bin"
+#pgrep sketchybar || ~/.config/sketchybar/start.sh &

@@ -1,0 +1,28 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export GITHUB_TOKEN=REDACTED
+
+export PATH="$HOME/.emacs.d/bin:$PATH"
+export PATH="/Applications/Emacs.app/Contents/MacOS/bin:$PATH"
+alias dotgit='git --git-dir=$HOME/Developer/personal/doom-org.git --work-tree=$HOME'
+
+
+# Created by `pipx` on 2025-07-13 20:57:23
+export PATH="$PATH:/Users/kiera/.local/bin"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
