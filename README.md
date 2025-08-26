@@ -1,1 +1,2 @@
-Dotfiles bro enjoy
+Dotfiles for fun
+- using chezmoi for management
